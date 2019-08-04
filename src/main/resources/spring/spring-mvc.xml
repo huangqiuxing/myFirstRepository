@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+	<!-- 属于 2.5 以前的版本 配置 -->
+	<!-- HandlerMapping 处理器映射器 -->
+	<!-- BeanNameUrlHandlerMapping 处理器映射器的处理类 -->
+	<!-- <bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping" 
+		/> -->
+	<!-- HandlerAdapter 处理器适配器 -->
+	<!-- SimpleControllerHandlerAdapter 处理适配器的处理类 -->
+	<!-- <bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter" 
+		/> -->
+
+	<!-- 3.x version -->
+	<!-- HandlerMapping 托管映射处理器 RequestMappingHandlerMapping -->
+	<bean
+		class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+		<!-- 若前台页面需要使用<spring:eval>这个格式化的标签时需要配置ConversionService的拦截器,其他时候不需要 -->
+		<!-- <property name="interceptors"> <list> <bean class="org.springframework.web.servlet.handler.ConversionServiceExposingInterceptor"> 
+			<constructor-arg ref="conversionService" /> </bean> </list> </property> -->
+	</bean>
+
+	<!-- HandlerAdapter 托管适配处理器 RequestMappingHandlerAdapter -->
+	<bean
+		class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+		<!-- 设置session会话线程安全 -->
+		<!-- <property name="synchronizeOnSession" value="true"></property> -->
+		<!-- 注册ConfigurableWebBindingInitializer到RequestMappingHandlerAdapter -->
+		<property name="webBindingInitializer"
+			ref="webBindingInitializer"></property>
+	</bean>
+
+	<!-- ViewResolver 视图解析器 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- viewClass：JstlView 表示 JSP 模板页面需要使用 JSTL 标签库， -->
+		<!-- JSP支持JSTL -->
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<!-- prefix 和 suffix：查找视图页面的前缀和后缀（前缀[逻辑视图名]后缀），比如传进来的逻辑视图名为 hello，则该该 jsp 
+			视图页面应该存放在“WEB-INF/jsp/hello.jsp” -->
+		<!-- 前缀 放在/WEB-INF/jsp/下面 -->
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<!-- 后缀 jsp文件 -->
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+	<!-- 处理器 -->
+	<!-- <bean id="/hello" class="com.yeahsir.controller.HelloWorldController"></bean> -->
+
+	<!--1.开启注解扫描 -->
+	<context:annotation-config />
+	<!--2.这是扫描的包 -->
+	<context:component-scan
+		base-package="com.hqx.controller" />
+
+	<!-- 将转换器集成到springMVC中 -->
+	<!-- ①注册ConversionService -->
+	<bean id="conversionService"
+		class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+		<!-- 配置自定义的转换器 -->
+		<property name="converters">
+			<set>
+				<!-- class里面丢自定义的转换器类 -->
+				<bean class="com.hqx.converter.StringToPhoneNumberConverter"></bean>
+				<bean class="com.hqx.converter.StringToDateConverter">
+					<constructor-arg value="yyyy-MM-dd" />   <!-- 因为类StringToDateConverter中有个带参构造器,所以要加上这个 -->
+				</bean>
+			</set>
+		</property>
+		<!-- 配置自定义的格式化 -->
+		<property name="formatters">
+			<set>
+				<bean class="com.hqx.Formatter.PhoneNumberFormatter"></bean>
+			</set>
+		</property>
+	</bean>
+
+	<!-- ②使用ConfigurableWebBindingInitializer注册conversionService -->
+	<bean id="webBindingInitializer"
+		class="org.springframework.web.bind.support.ConfigurableWebBindingInitializer">
+		<property name="conversionService" ref="conversionService"></property>
+		<property name="validator" ref="validator" />
+	</bean>
+	<!-- 配置JSR-303验证框架所需的消息源 -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />
+		<property name="fileEncodings" value="utf-8" />
+		<property name="cacheSeconds" value="120" />
+	</bean>
+	<!-- 添加对JSR-303验证框架的支持 -->
+	<!-- 以下 validator ConversionService 在使用 mvc:annotation-driven 会 自动注册 -->
+	<bean id="validator"
+		class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+		<property name="providerClass"
+			value="org.hibernate.validator.HibernateValidator" />
+		<!-- 如果不加默认到 使用classpath下的 ValidationMessages.properties -->
+		<property name="validationMessageSource" ref="messageSource" />
+	</bean>
+</beans>
