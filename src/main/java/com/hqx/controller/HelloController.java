@@ -19,6 +19,7 @@ public class HelloController {
 	@RequestMapping("/sayHello")
 	public String sayHello(@RequestParam String message, HttpServletRequest request) {
 		request.setAttribute("message", message);
+		//返回到hello页面
 		return "hello";
 	}
 
